@@ -1,6 +1,6 @@
 import logging
 from telegram import Update
-from telegram.ext import ContextTypes
+from telegram.ext import CallbackContext  # ContextTypes emas
 
 from database import db
 
@@ -27,7 +27,7 @@ def create_referral_link(bot_username, user_id):
     """
     return f"https://t.me/{bot_username}?start={user_id}"
 
-async def check_user_subscribed_to_channels(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def check_user_subscribed_to_channels(update: Update, context: CallbackContext):
     """
     Foydalanuvchi barcha kerakli kanallarga a'zo bo'lganligini tekshiradi.
     
@@ -44,7 +44,7 @@ async def check_user_subscribed_to_channels(update: Update, context: ContextType
     for channel in REQUIRED_CHANNELS:
         channel_id = channel  # kanal usernameni o'z ichiga oladi
         try:
-            chat_member = await context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
+            chat_member = context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
             status = chat_member.status
             # python-telegram-bot kutubxonasida status oddiy string sifatida qaytariladi
             if status not in ["member", "administrator", "creator"]:
@@ -57,7 +57,7 @@ async def check_user_subscribed_to_channels(update: Update, context: ContextType
     is_subscribed = len(not_subscribed) == 0
     return (is_subscribed, not_subscribed)
 
-async def handle_deep_linking(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def handle_deep_linking(update: Update, context: CallbackContext):
     """
     Handle messages that are not commands, mainly for debugging and helping users.
     """
@@ -67,7 +67,7 @@ async def handle_deep_linking(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Check if the message might be a deep link
     if message_text.startswith('https://t.me/'):
         # If someone sends the bot's link, explain how to use it properly
-        await update.message.reply_text(
+        update.message.reply_text(
             "Bu havolani do'stlaringizga yuboring, ularga havola orqali botga kirishlarini so'rang. "
             "Bu sizning taklifingiz hisoblanadi."
         )
@@ -79,7 +79,7 @@ async def handle_deep_linking(update: Update, context: ContextTypes.DEFAULT_TYPE
         invites_count = db.get_invites_count(user_id)
         remaining = max(0, 5 - invites_count)
         
-        await update.message.reply_text(
+        update.message.reply_text(
             f"Siz {invites_count} ta odamni taklif qildingiz. Maxfiy guruhga kirish uchun yana {remaining} ta odam taklif qiling.\n\n"
             f"Taklif havolangiz:\n<code>{referral_link}</code>\n\n"
             f"Taklif statistikangizni ko'rish uchun /check buyrug'ini yuboring.",
