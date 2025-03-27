@@ -1,21 +1,3 @@
-import os
-import logging
-from dotenv import load_dotenv
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
-
-from handlers import start_handler, button_handler, help_handler, check_invites_handler
-from utils import handle_deep_linking
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Set up logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG  # Changed to DEBUG for more verbose logging
-)
-logger = logging.getLogger(__name__)
-
 def run_bot():
     """Start the bot."""
     # Get the token from environment variables
@@ -45,12 +27,8 @@ def run_bot():
     # Log all errors
     application.add_error_handler(error_handler)
 
-    # Start the Bot
-    application.run_polling()
-
-def error_handler(update, context):
-    """Log errors caused by updates."""
-    logger.warning(f'Update "{update}" caused error "{context.error}"')
-
-if __name__ == "__main__":
-    run_bot()
+    # Start the Bot (asyncio ishga tushiriladi)
+    import asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(application.run_polling())
