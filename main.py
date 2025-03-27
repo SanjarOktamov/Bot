@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 import threading
 from telegram import Bot
 from flask import Flask
@@ -28,7 +29,7 @@ def home():
         try:
             # Botni alohida threadda ishga tushirish
             logger.info("Bot threadini ishga tushirish...")
-            bot_thread = threading.Thread(target=start_bot)
+            bot_thread = threading.Thread(target=start_bot_async)
             bot_thread.daemon = True
             bot_thread.start()
             bot_started = True
@@ -39,8 +40,11 @@ def home():
     
     return "Bot ishlayapti!"
 
-def start_bot():
-    logger.info("Bot threadini ishga tushirmoqda...")
+def start_bot_async():
+    # Async funksiyani ishga tushirish uchun event loop yaratish
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
     try:
         # Webhook o'chirilganiga ishonch hosil qilish
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -48,13 +52,14 @@ def start_bot():
             logger.error("TELEGRAM_BOT_TOKEN topilmadi!")
             return
             
+        # Async event loop ichida webhook o'chirish
         bot = Bot(token=token)
-        bot.delete_webhook(drop_pending_updates=True)
+        loop.run_until_complete(bot.delete_webhook(drop_pending_updates=True))
         logger.info("Webhook o'chirildi va kutilayotgan yangilanishlar o'chirildi!")
         
-        # Botni ishga tushirish
+        # Bot async funksiyasini ishga tushirish
         logger.info("Bot ishga tushmoqda...")
-        run_bot()
+        loop.run_until_complete(run_bot())
     except Exception as e:
         logger.error(f"Botda xatolik: {e}")
         import traceback
@@ -63,7 +68,7 @@ def start_bot():
 if __name__ == "__main__":
     # Bot threadni dastlab ishga tushirish
     logger.info("Dastlabki bot threadini ishga tushirish...")
-    bot_thread = threading.Thread(target=start_bot)
+    bot_thread = threading.Thread(target=start_bot_async)
     bot_thread.daemon = True
     bot_thread.start()
     bot_started = True
