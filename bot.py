@@ -1,3 +1,21 @@
+import os
+import logging
+from dotenv import load_dotenv
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
+
+from handlers import start_handler, button_handler, help_handler, check_invites_handler
+from utils import handle_deep_linking
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Set up logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.DEBUG  # Changed to DEBUG for more verbose logging
+)
+logger = logging.getLogger(__name__)
+
 def run_bot():
     """Start the bot."""
     # Get the token from environment variables
@@ -29,6 +47,22 @@ def run_bot():
 
     # Start the Bot (asyncio ishga tushiriladi)
     import asyncio
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(application.run_polling())
+    try:
+        logger.info("Bot run_polling ishga tushmoqda...")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(application.initialize())
+        loop.run_until_complete(application.start())
+        loop.run_until_complete(application.updater.start_polling())
+        loop.run_forever()
+    except Exception as e:
+        logger.error(f"Bot ishga tushirishda xatolik: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+
+def error_handler(update, context):
+    """Log errors caused by updates."""
+    logger.warning(f'Update "{update}" caused error "{context.error}"')
+
+if __name__ == "__main__":
+    run_bot()
