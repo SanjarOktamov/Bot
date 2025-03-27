@@ -15,8 +15,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Bot thread o'zgaruvchisi
+bot_thread = None
+bot_started = False
+
 @app.route('/')
 def home():
+    global bot_thread, bot_started
+    
+    # Agar bot hali ishga tushirilmagan bo'lsa
+    if not bot_started:
+        try:
+            # Botni alohida threadda ishga tushirish
+            logger.info("Bot threadini ishga tushirish...")
+            bot_thread = threading.Thread(target=start_bot)
+            bot_thread.daemon = True
+            bot_thread.start()
+            bot_started = True
+            logger.info("Bot threadi ishga tushirildi!")
+        except Exception as e:
+            logger.error(f"Bot threadini ishga tushirishda xatolik: {e}")
+            return f"Xatolik: {str(e)}"
+    
     return "Bot ishlayapti!"
 
 def start_bot():
@@ -40,25 +60,13 @@ def start_bot():
         import traceback
         logger.error(traceback.format_exc())
 
-# Bot thread'ini ishga tushirish
-bot_thread = None
-
-@app.before_first_request
-def start_bot_thread():
-    global bot_thread
-    if bot_thread is None or not bot_thread.is_alive():
-        logger.info("Bot threadini yaratish...")
-        bot_thread = threading.Thread(target=start_bot)
-        bot_thread.daemon = True
-        bot_thread.start()
-        logger.info("Bot threadi ishga tushirildi!")
-
-# Dastur bevosita ishga tushirilganda ham bot ishga tushsin
 if __name__ == "__main__":
-    # Botni ishga tushirish
+    # Bot threadni dastlab ishga tushirish
+    logger.info("Dastlabki bot threadini ishga tushirish...")
     bot_thread = threading.Thread(target=start_bot)
     bot_thread.daemon = True
     bot_thread.start()
+    bot_started = True
     
     # Flask serverini ishga tushirish
     port = int(os.environ.get("PORT", 8080))
