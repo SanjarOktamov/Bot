@@ -1,9 +1,7 @@
 import os
 import logging
-import asyncio
 from dotenv import load_dotenv
-from telegram import Bot
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
 
 from handlers import start_handler, button_handler, help_handler, check_invites_handler
 from utils import handle_deep_linking
@@ -33,34 +31,33 @@ def run_bot():
     secret_group_link = os.getenv("SECRET_GROUP_LINK", "https://t.me/+defaultSecretGroupLink")
     
     try:
-        # Create the Application and pass it the bot's token
-        logger.info("Application yaratilmoqda...")
-        application = Application.builder().token(token).build()
+        # Create the Updater and pass it the bot's token
+        logger.info("Updater yaratilmoqda...")
+        updater = Updater(token)
+        
+        # Get the dispatcher to register handlers
+        dispatcher = updater.dispatcher
 
         # Add handlers
-        application.add_handler(CommandHandler("start", start_handler))
-        application.add_handler(CommandHandler("help", help_handler))
-        application.add_handler(CommandHandler("check", check_invites_handler))
-        application.add_handler(CallbackQueryHandler(button_handler))
+        dispatcher.add_handler(CommandHandler("start", start_handler))
+        dispatcher.add_handler(CommandHandler("help", help_handler))
+        dispatcher.add_handler(CommandHandler("check", check_invites_handler))
+        dispatcher.add_handler(CallbackQueryHandler(button_handler))
         
         # Handle deep linking for referrals
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_deep_linking))
+        dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_deep_linking))
 
         # Log all errors
-        application.add_error_handler(error_handler)
-
+        dispatcher.add_error_handler(error_handler)
+        
         # Webhook o'chirish
         logger.info("Webhook o'chirilmoqda...")
-        application.bot.delete_webhook(drop_pending_updates=True)
+        updater.bot.delete_webhook(drop_pending_updates=True)
         logger.info("Webhook muvaffaqiyatli o'chirildi!")
         
         # Start the Bot
         logger.info("Bot polling boshlanyapti...")
-        application.run_polling(
-            poll_interval=1.0,
-            drop_pending_updates=True,
-            allowed_updates=["message", "callback_query"]
-        )
+        updater.start_polling(drop_pending_updates=True)
         
     except Exception as e:
         logger.error(f"Bot ishga tushirishda xatolik: {e}")
