@@ -18,10 +18,16 @@ logger = logging.getLogger(__name__)
 # Bot thread o'zgaruvchisi
 bot_thread = None
 bot_started = False
+ping_thread_started = False
 
 @app.route('/')
 def home():
-    global bot_thread, bot_started
+    global bot_thread, bot_started, ping_thread_started
+    
+    # Ping threadini birinchi marta ishga tushirish
+    if not ping_thread_started:
+        setup_ping()
+        ping_thread_started = True
     
     # Bot threadini tekshirish
     if bot_thread is None or not bot_thread.is_alive():
@@ -50,7 +56,6 @@ def start_bot_thread():
         logger.error(traceback.format_exc())
 
 # Har 5 daqiqada botni tekshirish
-@app.before_first_request
 def setup_ping():
     def ping_app():
         while True:
@@ -70,11 +75,15 @@ def setup_ping():
     ping_thread = threading.Thread(target=ping_app)
     ping_thread.daemon = True
     ping_thread.start()
+    logger.info("Ping thread boshlandi!")
 
 if __name__ == "__main__":
     # Bot threadni dastlab ishga tushirish
     logger.info("Dastlabki bot threadini ishga tushirish...")
     start_bot_thread()
+    
+    # Ping threadni ham ishga tushirish
+    setup_ping()
     
     # Flask serverini ishga tushirish
     port = int(os.environ.get("PORT", 8080))
