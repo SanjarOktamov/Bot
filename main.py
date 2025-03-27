@@ -1,9 +1,9 @@
 import os
 import logging
+import threading
 from telegram import Bot
 from flask import Flask
 from bot import run_bot
-import threading
 
 # Flask app yaratish
 app = Flask(__name__)
@@ -20,6 +20,7 @@ def home():
     return "Bot ishlayapti!"
 
 def start_bot():
+    logger.info("Bot threadini ishga tushirmoqda...")
     try:
         # Webhook o'chirilganiga ishonch hosil qilish
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -29,15 +30,32 @@ def start_bot():
             
         bot = Bot(token=token)
         bot.delete_webhook(drop_pending_updates=True)
-        logger.info("Webhook o'chirildi!")
+        logger.info("Webhook o'chirildi va kutilayotgan yangilanishlar o'chirildi!")
         
         # Botni ishga tushirish
+        logger.info("Bot ishga tushmoqda...")
         run_bot()
     except Exception as e:
         logger.error(f"Botda xatolik: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
 
+# Bot thread'ini ishga tushirish
+bot_thread = None
+
+@app.before_first_request
+def start_bot_thread():
+    global bot_thread
+    if bot_thread is None or not bot_thread.is_alive():
+        logger.info("Bot threadini yaratish...")
+        bot_thread = threading.Thread(target=start_bot)
+        bot_thread.daemon = True
+        bot_thread.start()
+        logger.info("Bot threadi ishga tushirildi!")
+
+# Dastur bevosita ishga tushirilganda ham bot ishga tushsin
 if __name__ == "__main__":
-    # Botni alohida thread'da ishga tushirish
+    # Botni ishga tushirish
     bot_thread = threading.Thread(target=start_bot)
     bot_thread.daemon = True
     bot_thread.start()
