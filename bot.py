@@ -16,8 +16,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Global Updater
+updater = None
+
 def run_bot():
     """Start the bot."""
+    global updater
+    
     # Get the token from environment variables
     logger.debug("Trying to load environment variables")
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -58,6 +63,7 @@ def run_bot():
         # Start the Bot
         logger.info("Bot polling boshlanyapti...")
         updater.start_polling(drop_pending_updates=True)
+        logger.info("Bot polling muvaffaqiyatli boshlandi")
         
     except Exception as e:
         logger.error(f"Bot ishga tushirishda xatolik: {e}")
@@ -67,6 +73,11 @@ def run_bot():
 def error_handler(update, context):
     """Log errors caused by updates."""
     logger.warning(f'Update "{update}" caused error "{context.error}"')
+
+def is_bot_running():
+    """Check if the bot is running."""
+    global updater
+    return updater is not None and updater.running
 
 if __name__ == "__main__":
     run_bot()
