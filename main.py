@@ -21,49 +21,25 @@ bot_started = False
 
 @app.route('/')
 def home():
-    return """
-    <html>
-    <head>
-        <title>Telegram Referral Bot</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-            h1 { color: #4CAF50; }
-            .container { max-width: 800px; margin: 0 auto; }
-            .status { padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-            .success { background-color: #dff0d8; color: #3c763d; }
-            .error { background-color: #f2dede; color: #a94442; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Telegram Referral Bot</h1>
-            <div class="status success">
-                <h3>Server statusi:</h3>
-                <p>Ishlayapti! Vaqt: {time}</p>
-            </div>
-            <div class="status {bot_status_class}">
-                <h3>Bot statusi:</h3>
-                <p>{bot_status}</p>
-                <p>Bot threadini tekshirish: {thread_status}</p>
-            </div>
-            <p>Bu sahifa faqat server ishlayotganini tekshirish uchun. Botdan foydalanish uchun Telegram'ga o'ting.</p>
-        </div>
-    </body>
-    </html>
-    """.format(
-        time=time.strftime('%Y-%m-%d %H:%M:%S'),
-        bot_status="Ishlayapti!" if is_bot_running() else "Ishlamayapti!",
-        bot_status_class="success" if is_bot_running() else "error",
-        thread_status="Faol" if bot_thread and bot_thread.is_alive() else "Faol emas"
-    )
+    global bot_thread, bot_started
+    
+    # Bot ishga tushganini tekshirish
+    if bot_started:
+        bot_status = "Ishlayapti!" if bot_thread and bot_thread.is_alive() else "To'xtab qolgan!"
+    else:
+        bot_status = "Hali ishga tushmagan!"
+        
+    return f"Bot statusi: {bot_status}. Server vaqti: {time.strftime('%Y-%m-%d %H:%M:%S')}"
 
 @app.route('/status')
 def status():
+    global bot_thread, bot_started
     return jsonify({
         'server': 'running',
         'time': time.strftime('%Y-%m-%d %H:%M:%S'),
         'bot_thread_alive': bot_thread is not None and bot_thread.is_alive(),
-        'bot_running': is_bot_running()
+        'bot_started': bot_started,
+        'bot_running': is_bot_running() if 'is_bot_running' in globals() else "Unknown"
     })
 
 # Bot threadini ishga tushirish
@@ -89,4 +65,4 @@ if __name__ == "__main__":
     
     # Flask serverini ishga tushirish
     port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port)
